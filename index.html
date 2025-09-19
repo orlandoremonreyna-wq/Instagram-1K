@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TextChat</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%232196F3' d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z'%3E%3C/path%3E%3C/svg%3E" type="image/svg+xml">
+    <style>
+        /* --- Variables de Colores Azules --- */
+        :root {
+            --primary-blue: #2196F3;       /* Azul principal (Material Design Blue 500) */
+            --dark-blue: #1976D2;          /* Azul más oscuro (Blue 700) */
+            --light-blue: #BBDEFB;         /* Azul muy claro (Blue 100) */
+            --accent-blue: #42A5F5;        /* Azul de acento (Blue 400) */
+            --text-color-dark: #333;
+            --text-color-light: #fefefe;
+            --border-color: #ddd;
+            --bg-light: #f5f7fb;           /* Fondo general claro */
+            --message-sent-bg: #dcf8c6;    /* Verde claro de mensaje enviado (tipo WhatsApp) */
+            --message-received-bg: #ffffff; /* Blanco para mensaje recibido */
+        }
+
+        /* --- Reseteo Básico y Fuente --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-color-dark);
+            line-height: 1.6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        /* Contenedor principal para simular la vista de la app */
+        .app-container {
+            width: 100%;
+            max-width: 450px; /* Ancho típico de un móvil */
+            height: 100vh;
+            max-height: 900px; /* Altura máxima para desktop */
+            background: var(--text-color-light);
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative; /* Para posicionar pantallas */
+        }
+
+        /* --- Estilos Generales de Controles --- */
+        h1, h2, h3 {
+            color: var(--dark-blue);
+            margin-bottom: 15px;
+        }
+        button {
+            background-color: var(--primary-blue);
+            color: var(--text-color-light);
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: var(--dark-blue);
+        }
+        input[type="text"], input[type="password"], input[type="email"] {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            font-size: 1em;
+        }
+        input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 2px rgba(66, 165, 245, 0.2);
+        }
+        form {
+            padding: 20px;
+        }
+
+        /* --- Pantallas (Login, ChatList, ChatConversation) --- */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-light);
+            transform: translateX(100%); /* Inicialmente fuera de vista */
+            transition: transform 0.3s ease-in-out;
+            padding: 20px;
+        }
+        .screen.active {
+            transform: translateX(0);
+        }
+
+        /* --- Login Screen --- */
+        #login-screen {
+            justify-content: center;
+            align-items: center;
+            background-color: var(--primary-blue);
+            color: var(--text-color-light);
+            padding: 20px;
+            transform: translateX(0); /* Login es la pantalla inicial */
+        }
+        #login-screen.active {
+            transform: translateX(0);
+        }
+        #login-screen h1 {
+            color: var(--text-color-light);
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.2em;
+        }
+        #login-screen form {
+            background-color: rgba(255,255,255,0.9);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            width: 90%;
+            max-width: 350px;
+        }
+        #login-screen form input {
+            border-color: var(--light-blue);
+        }
+        /* --- Chat List Screen --- */
+        #chat-list-screen {
+            flex-direction: column;
+        }
+        .chat-list-item {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            display: flex;
+            align-items: center;
+        }
+        .chat-list-item:hover {
+            background-color: var(--light-blue);
+        }
+        .chat-list-item img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 15px;
+            object-fit: cover; /* Evitar distorsión de la imagen */
+        }
+        .chat-list-item h3 {
+            margin-bottom: 5px;
+        }
+        .chat-list-item p {
+            color: var(--text-color-dark); /* Un tono grisáceo */
+            font-size: 0.9em;
+        }
+
+        /* --- Chat Conversation Screen --- */
+        #chat-conversation-screen {
+            flex-direction: column;
+        }
+        #chat-conversation-screen header {
+            background-color: var(--primary-blue);
+            color: var(--text-color-light);
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        #messages-container {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto; /* Habilitar scroll vertical */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            padding: 10px 15px;
+            border-radius: 20px;
+            margin-bottom: 10px;
+            max-width: 80%; /* Evitar que el mensaje ocupe todo el ancho */
+            clear: both; /* Asegurar que el float no afecte el diseño */
+        }
+        .message.sent {
+            background-color: var(--message-sent-bg);
+            align-self: flex-end; /* Alinear a la derecha */
+            float: right;
+        }
+        .message.received {
+            background-color: var(--message-received-bg);
+            align-self: flex-start; /* Alinear a la izquierda */
+            float: left;
+        }
+
+        .message .message-content {
+            word-wrap: break-word; /* Romper palabras largas para evitar desbordamiento */
+        }
+
+        #input-area {
+            background-color: var(--bg-light);
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            border-top: 1px solid var(--border-color);
+        }
+        #message-input {
+            flex-grow: 1;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 25px;
+            font-size: 1em;
+            margin-right: 10px;
+        }
+        #message-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 2px rgba(66, 165, 245, 0.2);
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+
+    <!-- Login Screen -->
+    <div class="screen active" id="login-screen">
+        <h1>TextChat</h1>
+        <form id="login-form">
+            <input type="email" id="email-input" placeholder="Email" required>
+            <input type="password" id="password-input" placeholder="Password" required>
+            <button type="button" id="login-button">Login</button>
+            <button type="button" id="signup-button">Sign Up</button>
+            <p id="login-error" style="color: red; display: none;">Invalid credentials.</p>
+        </form>
+    </div>
+
+    <!-- Chat List Screen -->
+    <div class="screen" id="chat-list-screen">
+        <h2>Chats</h2>
+        <div class="chat-list-item" data-chat-id="1">
+            <img src="https://via.placeholder.com/50" alt="User Avatar">
+            <div>
+                <h3>John Doe</h3>
+                <p>Last message: Hello!</p>
+            </div>
+        </div>
+        <div class="chat-list-item" data-chat-id="2">
+            <img src="https://via.placeholder.com/50" alt="User Avatar">
+            <div>
+                <h3>Jane Smith</h3>
+                <p>Last message: How are you?</p>
+            </div>
+        </div>
+        <!-- More chat list items -->
+    </div>
+
+    <!-- Chat Conversation Screen -->
+    <div class="screen" id="chat-conversation-screen">
+        <header>
+            <h2>Chat with John Doe</h2>
+        </header>
+        <div id="messages-container">
+            <!-- Messages will be dynamically added here -->
+            <div class="message received">
+                <div class="message-content">Hello!</div>
+            </div>
+            <div class="message sent">
+                <div class="message-content">Hi there!</div>
+            </div>
+        </div>
+        <div id="input-area">
+            <input type="text" id="message-input" placeholder="Type a message...">
+            <button id="send-button">Send</button>
+        </div>
+    </div>
+</div>
+
+<!-- Carga la librería de Supabase desde CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+    // Reemplaza con tu URL de Supabase y llave anónima
+    const SUPABASE_URL = 'https://fwmqxujxfqhqseekjdtd.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3bXF4dWp4ZnFocXNlZWtqZHRkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4ODQwNzUsImV4cCI6MjA3MTQ2MDA3NX0.WYc3jxaA9qxQr-VwcEdScHDeihbLrghFQnLlr2G2tmk';
+
+    const
+supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Selectores de elementos HTML
+    const loginScreen = document.getElementById('login-screen');
+    const chatListScreen = document.getElementById('chat-list-screen');
+    const chatConversationScreen = document.getElementById('chat-conversation-screen');
+    const emailInput = document.getElementById('email-input');
+    const passwordInput = document.getElementById('password-input');
+    const loginButton = document.getElementById('login-button');
+    const signupButton = document.getElementById('signup-button');
+    const loginError = document.getElementById('login-error');
+    const messagesContainer = document.getElementById('messages-container');
+    const messageInput = document.getElementById('message-input');
+    const sendButton = document.getElementById('send-button');
+
+    let currentSession = supabase.auth.getSession()
+
+    async function getSession() {
+        const { data, error } = await supabase.auth.getSession()
+
+        if (data) {
+            return data;
+        } else {
+            console.log(error)
+        }
+    }
+
+    getSession().then(session => {
+        currentSession = session
+        console.log(currentSession)
+
+        if (session.session) {
+            console.log("Already logged in")
+            showChatList();
+        }
+    })
+
+    // Funciones para mostrar pantallas
+    function showScreen(screenId) {
+        const screens = document.querySelectorAll('.screen');
+        screens.forEach(screen => screen.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+    }
+
+    function showChatList() {
+        showScreen('chat-list-screen');
+    }
+
+    function showChatConversation(chatId) {
+        showScreen('chat-conversation-screen');
+        // Load messages for this chat ID (replace with actual data loading)
+        loadMessages(chatId);
+    }
+
+    // Funciones de Autenticación
+    async function signUp() {
+        const email = emailInput.value;
+        const password = passwordInput.value;
+
+        const { data, error } = await supabase.auth.signUp({
+            email: email,
+            password: password,
+        })
+
+        if (error) {
+            loginError.textContent = error.message;
+            loginError.style.display = 'block';
+        } else {
+            console.log("Signup successful", data)
+            showChatList();
+            loginError.style.display = 'none';
+            currentSession.session = data.session;
+        }
+    }
+
+    async function signIn() {
+        const email = emailInput.value;
+        const password = passwordInput.value;
+
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password,
+        })
+
+        if (error) {
+            loginError.textContent = error.message;
+            loginError.style.display = 'block';
+        } else {
+            console.log("Login successful", data)
+            showChatList();
+            loginError.style.display = 'none';
+            currentSession.session = data.session;
+        }
+    }
+
+
+    // Funciones de Chat
+    async function loadMessages(chatId) {
+        // Replace with actual Supabase query to load messages for the given chatId
+        // This is a placeholder
+        messagesContainer.innerHTML = `
+            <div class="message received">
+                <div class="message-content">Placeholder message for chat ${chatId}</div>
+            </div>
+        `;
+    }
+
+    async function sendMessage() {
+        const messageText = messageInput.value.trim();
+        if (messageText) {
+            // Replace with Supabase insert to store the message in the database
+            // and load all chat for the logged in user (currentSession.session.user.id)
+            mes
+sageInput.value = ''; // Clear the input
+            // loadMessages(currentChatId); // Recargar mensajes para mostrar el nuevo
+        }
+    }
+
+    // Event Listeners
+    loginButton.addEventListener('click', signIn);
+    signupButton.addEventListener('click', signUp);
+    sendButton.addEventListener('click', sendMessage);
+
+    // Event listener para los items de la lista de chat
+    document.querySelectorAll('.chat-list-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const chatId = this.dataset.chatId;
+            showChatConversation(chatId);
+        });
+    });
+
+    // Initialize: hide all screens except the login screen
+
+</script>
+</body>
+</html>
